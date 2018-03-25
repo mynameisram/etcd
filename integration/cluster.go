@@ -1003,18 +1003,32 @@ func NewClusterV3(t *testing.T, cfg *ClusterConfig) *ClusterV3 {
 		clientv3.SetLogger(grpclog.NewLoggerV2WithVerbosity(os.Stderr, os.Stderr, os.Stderr, 4))
 	}
 	clus := &ClusterV3{
-		cluster: NewClusterByConfig(t, cfg),
+		//cluster: NewClusterByConfig(t, cfg),
 	}
-	clus.Launch(t)
+	//clus.Launch(t)
 
 	if !cfg.SkipCreatingClient {
-		for _, m := range clus.Members {
-			client, err := NewClientV3(m)
+		cfg := clientv3.Config{
+			Endpoints:   []string{"http://127.0.0.1:2379"},
+			DialTimeout: 300 * time.Second,
+		}
+
+		for i := 0; i < 3; i++ {
+			client, err := newClientV3(cfg)
 			if err != nil {
 				t.Fatalf("cannot create client: %v", err)
 			}
 			clus.clients = append(clus.clients, client)
 		}
+		/*
+			for _, m := range clus.Members {
+				client, err := NewClientV3(m)
+				if err != nil {
+					t.Fatalf("cannot create client: %v", err)
+				}
+				clus.clients = append(clus.clients, client)
+			}
+		*/
 	}
 
 	return clus
@@ -1037,7 +1051,7 @@ func (c *ClusterV3) Terminate(t *testing.T) {
 		}
 	}
 	c.mu.Unlock()
-	c.cluster.Terminate(t)
+	//c.cluster.Terminate(t)
 }
 
 func (c *ClusterV3) RandClient() *clientv3.Client {

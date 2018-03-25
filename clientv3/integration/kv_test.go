@@ -69,7 +69,7 @@ func TestKVPutError(t *testing.T) {
 	}
 }
 
-func TestKVPut(t *testing.T) {
+func TestKVPutPositive(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
@@ -558,7 +558,7 @@ func TestKVDeleteRange(t *testing.T) {
 	}
 }
 
-func TestKVDelete(t *testing.T) {
+func TestKVDeleteSingle(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
@@ -571,15 +571,13 @@ func TestKVDelete(t *testing.T) {
 	if err != nil {
 		t.Fatalf("couldn't put 'foo' (%v)", err)
 	}
-	if presp.Header.Revision != 2 {
-		t.Fatalf("presp.Header.Revision got %d, want %d", presp.Header.Revision, 2)
-	}
+	prevrevision := presp.Header.Revision
 	resp, err := kv.Delete(ctx, "foo")
 	if err != nil {
 		t.Fatalf("couldn't delete key (%v)", err)
 	}
-	if resp.Header.Revision != 3 {
-		t.Fatalf("resp.Header.Revision got %d, want %d", resp.Header.Revision, 3)
+	if resp.Header.Revision != prevrevision+1 {
+		t.Errorf("resp.Header.Revision got %d, want %d", resp.Header.Revision, prevrevision+1)
 	}
 	gresp, err := kv.Get(ctx, "foo")
 	if err != nil {
@@ -599,28 +597,31 @@ func TestKVCompactError(t *testing.T) {
 	kv := clus.RandClient()
 	ctx := context.TODO()
 
+	var revision int64
 	for i := 0; i < 5; i++ {
-		if _, err := kv.Put(ctx, "foo", "bar"); err != nil {
+		response, err := kv.Put(ctx, "foo", "bar")
+		if err != nil {
 			t.Fatalf("couldn't put 'foo' (%v)", err)
 		}
+		revision = response.Header.Revision
 	}
-	_, err := kv.Compact(ctx, 6)
+	_, err := kv.Compact(ctx, revision+1)
 	if err != nil {
 		t.Fatalf("couldn't compact 6 (%v)", err)
 	}
 
-	_, err = kv.Compact(ctx, 6)
+	_, err = kv.Compact(ctx, revision+1)
 	if err != rpctypes.ErrCompacted {
 		t.Fatalf("expected %v, got %v", rpctypes.ErrCompacted, err)
 	}
 
-	_, err = kv.Compact(ctx, 100)
+	_, err = kv.Compact(ctx, revision+100)
 	if err != rpctypes.ErrFutureRev {
 		t.Fatalf("expected %v, got %v", rpctypes.ErrFutureRev, err)
 	}
 }
 
-func TestKVCompact(t *testing.T) {
+func TestKVCompactPositive(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
@@ -629,17 +630,23 @@ func TestKVCompact(t *testing.T) {
 	kv := clus.RandClient()
 	ctx := context.TODO()
 
+	var revision int64
 	for i := 0; i < 10; i++ {
-		if _, err := kv.Put(ctx, "foo", "bar"); err != nil {
+		response, err := kv.Put(ctx, "foo", "bar", clientv3.WithPrevKV())
+		if err != nil {
 			t.Fatalf("couldn't put 'foo' (%v)", err)
+		}
+
+		if i == 7 {
+			revision = response.PrevKv.ModRevision
 		}
 	}
 
-	_, err := kv.Compact(ctx, 7)
+	_, err := kv.Compact(ctx, revision)
 	if err != nil {
 		t.Fatalf("couldn't compact kv space (%v)", err)
 	}
-	_, err = kv.Compact(ctx, 7)
+	_, err = kv.Compact(ctx, revision)
 	if err == nil || err != rpctypes.ErrCompacted {
 		t.Fatalf("error got %v, want %v", err, rpctypes.ErrCompacted)
 	}
@@ -650,14 +657,14 @@ func TestKVCompact(t *testing.T) {
 
 	wchan := wcli.Watch(ctx, "foo", clientv3.WithRev(3))
 
-	if wr := <-wchan; wr.CompactRevision != 7 {
+	if wr := <-wchan; wr.CompactRevision != revision {
 		t.Fatalf("wchan CompactRevision got %v, want 7", wr.CompactRevision)
 	}
 	if wr, ok := <-wchan; ok {
 		t.Fatalf("wchan got %v, expected closed", wr)
 	}
 
-	_, err = kv.Compact(ctx, 1000)
+	_, err = kv.Compact(ctx, revision+1000)
 	if err == nil || err != rpctypes.ErrFutureRev {
 		t.Fatalf("error got %v, want %v", err, rpctypes.ErrFutureRev)
 	}

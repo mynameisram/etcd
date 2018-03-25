@@ -30,7 +30,7 @@ import (
 	"github.com/coreos/etcd/pkg/testutil"
 )
 
-func TestLeasingPutGet(t *testing.T) {
+func TestLeasingPutGetPositive(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
@@ -152,7 +152,8 @@ func TestLeasingPutInvalidateNew(t *testing.T) {
 	if cerr != nil {
 		t.Fatal(cerr)
 	}
-	if !reflect.DeepEqual(lkvResp, cResp) {
+	// because stored proc, even range will increment it by 1
+	if !reflect.DeepEqual(lkvResp.Kvs, cResp.Kvs) {
 		t.Fatalf(`expected %+v, got response %+v`, cResp, lkvResp)
 	}
 }
@@ -186,7 +187,7 @@ func TestLeasingPutInvalidateExisting(t *testing.T) {
 	if cerr != nil {
 		t.Fatal(cerr)
 	}
-	if !reflect.DeepEqual(lkvResp, cResp) {
+	if !reflect.DeepEqual(lkvResp.Kvs, cResp.Kvs) {
 		t.Fatalf(`expected %+v, got response %+v`, cResp, lkvResp)
 	}
 }

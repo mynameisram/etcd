@@ -492,21 +492,25 @@ func TestWatchCompactRevision(t *testing.T) {
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 1})
 	defer clus.Terminate(t)
-
+	var revision int64
 	// set some keys
 	kv := clus.RandClient()
 	for i := 0; i < 5; i++ {
-		if _, err := kv.Put(context.TODO(), "foo", "bar"); err != nil {
+		response, err := kv.Put(context.TODO(), "foo", "bar")
+		if err != nil {
 			t.Fatal(err)
+		}
+		if i == 3 {
+			revision = response.Header.Revision
 		}
 	}
 
 	w := clus.RandClient()
 
-	if _, err := kv.Compact(context.TODO(), 4); err != nil {
+	if _, err := kv.Compact(context.TODO(), revision); err != nil {
 		t.Fatal(err)
 	}
-	wch := w.Watch(context.Background(), "foo", clientv3.WithRev(2))
+	wch := w.Watch(context.Background(), "foo", clientv3.WithRev(revision-1))
 
 	// get compacted error message
 	wresp, ok := <-wch

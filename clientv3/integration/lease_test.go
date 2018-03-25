@@ -121,7 +121,7 @@ func TestLeaseKeepAliveOnce(t *testing.T) {
 	}
 }
 
-func TestLeaseKeepAlive(t *testing.T) {
+func TestLeaseKeepAliveStandalone(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
@@ -484,7 +484,7 @@ func TestLeaseKeepAliveTTLTimeout(t *testing.T) {
 	clus.Members[0].Restart(t)
 }
 
-func TestLeaseTimeToLive(t *testing.T) {
+func TestLeaseTimeToLivePositive(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
