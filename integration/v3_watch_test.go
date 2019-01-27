@@ -206,6 +206,23 @@ func TestV3WatchFromCurrentRevision(t *testing.T) {
 	for i, tt := range tests {
 		clus := NewClusterV3(t, &ClusterConfig{Size: 3})
 
+		kvAPI := toGRPC(clus.RandClient()).KV
+		getRequest := &pb.RangeRequest{Key: []byte("foo")}
+		getResp, _ := kvAPI.Range(context.TODO(), getRequest)
+		baseRevision := getResp.Header.Revision
+
+		fmt.Printf("#%d: base revision is %d\n", i, baseRevision)
+
+		for _, wresp := range tt.wresps {
+			wresp.Header.Revision += baseRevision - 1
+			for _, evt := range wresp.Events {
+				if evt.Kv != nil {
+					evt.Kv.CreateRevision += baseRevision - 1
+					evt.Kv.ModRevision += baseRevision - 1
+				}
+			}
+		}
+
 		wAPI := toGRPC(clus.RandClient()).Watch
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
@@ -238,8 +255,8 @@ func TestV3WatchFromCurrentRevision(t *testing.T) {
 		}
 
 		createdWatchId := cresp.WatchId
-		if cresp.Header == nil || cresp.Header.Revision != 1 {
-			t.Errorf("#%d: header revision got +%v, wanted revison 1", i, cresp)
+		if cresp.Header == nil || cresp.Header.Revision != baseRevision {
+			t.Errorf("#%d: header revision got +%v, wanted revison %d", i, cresp, baseRevision)
 			clus.Terminate(t)
 			continue
 		}
@@ -306,8 +323,13 @@ func TestV3WatchFutureRevision(t *testing.T) {
 		t.Fatalf("wAPI.Watch error: %v", err)
 	}
 
+	kvAPI := toGRPC(clus.RandClient()).KV
+	getRequest := &pb.RangeRequest{Key: []byte("foo")}
+	getResp, _ := kvAPI.Range(context.TODO(), getRequest)
+	baseRevision := getResp.Header.Revision
+
 	wkey := []byte("foo")
-	wrev := int64(10)
+	wrev := int64(baseRevision + 10)
 	req := &pb.WatchRequest{RequestUnion: &pb.WatchRequest_CreateRequest{
 		CreateRequest: &pb.WatchCreateRequest{Key: wkey, StartRevision: wrev}}}
 	err = wStream.Send(req)
@@ -476,6 +498,11 @@ func TestV3WatchCurrentPutOverlap(t *testing.T) {
 		t.Fatalf("wAPI.Watch error: %v", wErr)
 	}
 
+	kvAPI := toGRPC(clus.RandClient()).KV
+	getRequest := &pb.RangeRequest{Key: []byte("foo")}
+	getResp, _ := kvAPI.Range(context.TODO(), getRequest)
+	baseRevision := getResp.Header.Revision
+
 	// last mod_revision that will be observed
 	nrRevisions := 32
 	// first revision already allocated as empty revision
@@ -509,9 +536,9 @@ func TestV3WatchCurrentPutOverlap(t *testing.T) {
 		if resp.Created {
 			// accept events > header revision
 			progress[resp.WatchId] = resp.Header.Revision + 1
-			if resp.Header.Revision == int64(nrRevisions) {
+			if resp.Header.Revision == int64(nrRevisions)+baseRevision-1 {
 				// covered all revisions; create no more watchers
-				progress[-1] = int64(nrRevisions) + 1
+				progress[-1] = int64(nrRevisions) + baseRevision - 1 + 1
 			} else if err := wStream.Send(wreq); err != nil {
 				t.Fatalf("watch request failed (%v)", err)
 			}
@@ -530,7 +557,7 @@ func TestV3WatchCurrentPutOverlap(t *testing.T) {
 		}
 		more = false
 		for _, v := range progress {
-			if v <= int64(nrRevisions) {
+			if v <= int64(nrRevisions)+baseRevision-1 {
 				more = true
 				break
 			}
@@ -551,6 +578,11 @@ func TestV3WatchEmptyKey(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+
+	kvAPI := toGRPC(clus.RandClient()).KV
+	getRequest := &pb.RangeRequest{Key: []byte("foo")}
+	getResp, _ := kvAPI.Range(context.TODO(), getRequest)
+	baseRevision := getResp.Header.Revision
 
 	ws, werr := toGRPC(clus.RandClient()).Watch.Watch(ctx)
 	if werr != nil {
@@ -581,7 +613,7 @@ func TestV3WatchEmptyKey(t *testing.T) {
 	wevs := []*mvccpb.Event{
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo"), CreateRevision: 2, ModRevision: 2, Version: 1},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo"), CreateRevision: 2 + baseRevision - 1, ModRevision: 2 + baseRevision - 1, Version: 1},
 		},
 	}
 	if !reflect.DeepEqual(resp.Events, wevs) {
@@ -608,6 +640,14 @@ func testV3WatchMultipleWatchers(t *testing.T, startRev int64) {
 	defer clus.Terminate(t)
 
 	kvc := toGRPC(clus.RandClient()).KV
+
+	getRequest := &pb.RangeRequest{Key: []byte("foo")}
+	getResp, _ := kvc.Range(context.TODO(), getRequest)
+	baseRevision := getResp.Header.Revision
+
+	if startRev != 0 {
+		startRev += baseRevision - 1
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -636,6 +676,9 @@ func testV3WatchMultipleWatchers(t *testing.T, startRev int64) {
 	ids := make(map[int64]struct{})
 	for i := 0; i < watchKeyN+1; i++ {
 		wresp, err := wStream.Recv()
+
+		fmt.Printf("Received (%+v)\n", wresp)
+
 		if err != nil {
 			t.Fatalf("wStream.Recv error: %v", err)
 		}
@@ -651,6 +694,9 @@ func testV3WatchMultipleWatchers(t *testing.T, startRev int64) {
 
 	for i := 0; i < watchKeyN+1; i++ {
 		wresp, err := wStream.Recv()
+
+		fmt.Printf("#%d Received (%+v)\n", i, wresp)
+
 		if err != nil {
 			t.Fatalf("wStream.Recv error: %v", err)
 		}
@@ -727,6 +773,15 @@ func testV3WatchMultipleEventsTxn(t *testing.T, startRev int64) {
 	}
 
 	kvc := toGRPC(clus.RandClient()).KV
+
+	getRequest := &pb.RangeRequest{Key: []byte("foo")}
+	getResp, _ := kvc.Range(context.TODO(), getRequest)
+	baseRevision := getResp.Header.Revision
+
+	if startRev != 0 {
+		startRev += baseRevision - 1
+	}
+
 	txn := pb.TxnRequest{}
 	for i := 0; i < 3; i++ {
 		ru := &pb.RequestOp{}
@@ -757,15 +812,15 @@ func testV3WatchMultipleEventsTxn(t *testing.T, startRev int64) {
 	wevents := []*mvccpb.Event{
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo0"), Value: []byte("bar"), CreateRevision: 2, ModRevision: 2, Version: 1},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo0"), Value: []byte("bar"), CreateRevision: 2 + baseRevision - 1, ModRevision: 2 + baseRevision - 1, Version: 1},
 		},
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo1"), Value: []byte("bar"), CreateRevision: 2, ModRevision: 2, Version: 1},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo1"), Value: []byte("bar"), CreateRevision: 2 + baseRevision - 1, ModRevision: 2 + baseRevision - 1, Version: 1},
 		},
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo2"), Value: []byte("bar"), CreateRevision: 2, ModRevision: 2, Version: 1},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo2"), Value: []byte("bar"), CreateRevision: 2 + baseRevision - 1, ModRevision: 2 + baseRevision - 1, Version: 1},
 		},
 	}
 
@@ -792,6 +847,10 @@ func TestV3WatchMultipleEventsPutUnsynced(t *testing.T) {
 
 	kvc := toGRPC(clus.RandClient()).KV
 
+	getRequest := &pb.RangeRequest{Key: []byte("foo")}
+	getResp, _ := kvc.Range(context.TODO(), getRequest)
+	baseRevision := getResp.Header.Revision
+
 	if _, err := kvc.Put(context.TODO(), &pb.PutRequest{Key: []byte("foo0"), Value: []byte("bar")}); err != nil {
 		t.Fatalf("couldn't put key (%v)", err)
 	}
@@ -808,7 +867,7 @@ func TestV3WatchMultipleEventsPutUnsynced(t *testing.T) {
 
 	wreq := &pb.WatchRequest{RequestUnion: &pb.WatchRequest_CreateRequest{
 		CreateRequest: &pb.WatchCreateRequest{
-			Key: []byte("foo"), RangeEnd: []byte("fop"), StartRevision: 1}}}
+			Key: []byte("foo"), RangeEnd: []byte("fop"), StartRevision: 1 + baseRevision - 1}}}
 	if err := wStream.Send(wreq); err != nil {
 		t.Fatalf("wStream.Send error: %v", err)
 	}
@@ -823,19 +882,19 @@ func TestV3WatchMultipleEventsPutUnsynced(t *testing.T) {
 	allWevents := []*mvccpb.Event{
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo0"), Value: []byte("bar"), CreateRevision: 2, ModRevision: 2, Version: 1},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo0"), Value: []byte("bar"), CreateRevision: 2 + baseRevision - 1, ModRevision: 2 + baseRevision - 1, Version: 1},
 		},
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo1"), Value: []byte("bar"), CreateRevision: 3, ModRevision: 3, Version: 1},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo1"), Value: []byte("bar"), CreateRevision: 3 + baseRevision - 1, ModRevision: 3 + baseRevision - 1, Version: 1},
 		},
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo0"), Value: []byte("bar"), CreateRevision: 2, ModRevision: 4, Version: 2},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo0"), Value: []byte("bar"), CreateRevision: 2 + baseRevision - 1, ModRevision: 4 + baseRevision - 1, Version: 2},
 		},
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo1"), Value: []byte("bar"), CreateRevision: 3, ModRevision: 5, Version: 2},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo1"), Value: []byte("bar"), CreateRevision: 3 + baseRevision - 1, ModRevision: 5 + baseRevision - 1, Version: 2},
 		},
 	}
 
@@ -882,6 +941,14 @@ func testV3WatchMultipleStreams(t *testing.T, startRev int64) {
 	wAPI := toGRPC(clus.RandClient()).Watch
 	kvc := toGRPC(clus.RandClient()).KV
 
+	getRequest := &pb.RangeRequest{Key: []byte("foo")}
+	getResp, _ := kvc.Range(context.TODO(), getRequest)
+	baseRevision := getResp.Header.Revision
+
+	if startRev != 0 {
+		startRev += baseRevision - 1
+	}
+
 	streams := make([]pb.Watch_WatchClient, 5)
 	for i := range streams {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -918,7 +985,7 @@ func testV3WatchMultipleStreams(t *testing.T, startRev int64) {
 	wevents := []*mvccpb.Event{
 		{
 			Type: mvccpb.PUT,
-			Kv:   &mvccpb.KeyValue{Key: []byte("foo"), Value: []byte("bar"), CreateRevision: 2, ModRevision: 2, Version: 1},
+			Kv:   &mvccpb.KeyValue{Key: []byte("foo"), Value: []byte("bar"), CreateRevision: 2 + baseRevision - 1, ModRevision: 2 + baseRevision - 1, Version: 1},
 		},
 	}
 	for i := range streams {
@@ -1069,6 +1136,11 @@ func TestV3WatchWithFilter(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
+	kvAPI := toGRPC(clus.RandClient()).KV
+	getRequest := &pb.RangeRequest{Key: []byte("foo")}
+	getResp, _ := kvAPI.Range(context.TODO(), getRequest)
+	baseRevision := getResp.Header.Revision
+
 	ws, werr := toGRPC(clus.RandClient()).Watch.Watch(ctx)
 	if werr != nil {
 		t.Fatal(werr)
@@ -1105,7 +1177,7 @@ func TestV3WatchWithFilter(t *testing.T) {
 	select {
 	case <-recv:
 		t.Fatal("failed to filter out put event")
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(3000 * time.Millisecond):
 	}
 
 	dreq := &pb.DeleteRangeRequest{Key: []byte("foo")}
@@ -1118,13 +1190,13 @@ func TestV3WatchWithFilter(t *testing.T) {
 		wevs := []*mvccpb.Event{
 			{
 				Type: mvccpb.DELETE,
-				Kv:   &mvccpb.KeyValue{Key: []byte("foo"), ModRevision: 3},
+				Kv:   &mvccpb.KeyValue{Key: []byte("foo"), ModRevision: 3 + baseRevision - 1},
 			},
 		}
 		if !reflect.DeepEqual(resp.Events, wevs) {
 			t.Fatalf("got %v, expected %v", resp.Events, wevs)
 		}
-	case <-time.After(100 * time.Millisecond):
+	case <-time.After(3000 * time.Millisecond):
 		t.Fatal("failed to receive delete event")
 	}
 }

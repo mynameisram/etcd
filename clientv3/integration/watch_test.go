@@ -351,7 +351,8 @@ func TestWatchResumeInitRev(t *testing.T) {
 	defer clus.Terminate(t)
 
 	cli := clus.Client(0)
-	if _, err := cli.Put(context.TODO(), "b", "2"); err != nil {
+	iresp, err := cli.Put(context.TODO(), "b", "2")
+	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := cli.Put(context.TODO(), "a", "3"); err != nil {
@@ -362,9 +363,9 @@ func TestWatchResumeInitRev(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	wch := clus.Client(0).Watch(context.Background(), "a", clientv3.WithRev(1), clientv3.WithCreatedNotify())
-	if resp, ok := <-wch; !ok || resp.Header.Revision != 4 {
-		t.Fatalf("got (%v, %v), expected create notification rev=4", resp, ok)
+	wch := clus.Client(0).Watch(context.Background(), "a", clientv3.WithRev(iresp.Header.GetRevision()-1), clientv3.WithCreatedNotify())
+	if resp, ok := <-wch; !ok || resp.Header.Revision != iresp.Header.GetRevision()+2 {
+		t.Fatalf("got (%+v, %v), expected create notification rev=%d", resp, ok, iresp.Header.GetRevision()+2)
 	}
 	// pause wch
 	clus.Members[0].DropConnections()
@@ -406,9 +407,11 @@ func TestWatchResumeCompacted(t *testing.T) {
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
 	defer clus.Terminate(t)
 
+	kv := clus.Client(1)
+	iresp, _ := kv.Get(context.TODO(), "foo")
 	// create a waiting watcher at rev 1
 	w := clus.Client(0)
-	wch := w.Watch(context.Background(), "foo", clientv3.WithRev(1))
+	wch := w.Watch(context.Background(), "foo", clientv3.WithRev(iresp.Header.GetRevision()))
 	select {
 	case w := <-wch:
 		t.Errorf("unexpected message from wch %v", w)
@@ -428,13 +431,13 @@ func TestWatchResumeCompacted(t *testing.T) {
 
 	// put some data and compact away
 	numPuts := 5
-	kv := clus.Client(1)
+
 	for i := 0; i < numPuts; i++ {
 		if _, err := kv.Put(context.TODO(), "foo", "bar"); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if _, err := kv.Compact(context.TODO(), 3); err != nil {
+	if _, err := kv.Compact(context.TODO(), iresp.Header.GetRevision()+2); err != nil {
 		t.Fatal(err)
 	}
 
@@ -444,7 +447,7 @@ func TestWatchResumeCompacted(t *testing.T) {
 	// the watch resumes, there is a window where the watch can stay synced and
 	// read off all events; if the watcher misses the window, it will go out of
 	// sync and get a compaction error.
-	wRev := int64(2)
+	wRev := int64(iresp.Header.GetRevision() + 1)
 	for int(wRev) <= numPuts+1 {
 		var wresp clientv3.WatchResponse
 		var ok bool
@@ -510,7 +513,7 @@ func TestWatchCompactRevision(t *testing.T) {
 	if _, err := kv.Compact(context.TODO(), revision); err != nil {
 		t.Fatal(err)
 	}
-	wch := w.Watch(context.Background(), "foo", clientv3.WithRev(revision-1))
+	wch := w.Watch(context.Background(), "foo", clientv3.WithRev(revision-2))
 
 	// get compacted error message
 	wresp, ok := <-wch
@@ -744,7 +747,8 @@ func TestWatchWithRequireLeader(t *testing.T) {
 	// so proxy tests receive a leader loss event on its existing watch before creating a new watch.
 	time.Sleep(time.Duration(5*clus.Members[0].ElectionTicks) * tickDuration)
 
-	chLeader := liveClient.Watch(clientv3.WithRequireLeader(context.TODO()), "foo", clientv3.WithRev(1))
+	iresp, _ := liveClient.Get(context.TODO(), "foo")
+	chLeader := liveClient.Watch(clientv3.WithRequireLeader(context.TODO()), "foo", clientv3.WithRev(iresp.Header.GetRevision()))
 	chNoLeader := liveClient.Watch(context.TODO(), "foo", clientv3.WithRev(1))
 
 	select {

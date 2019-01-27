@@ -130,11 +130,12 @@ func TestV3CompactCurrentRev(t *testing.T) {
 		}
 	}
 	// get key to add to proxy cache, if any
-	if _, err := kvc.Range(context.TODO(), &pb.RangeRequest{Key: []byte("foo")}); err != nil {
-		t.Fatal(err)
+	rresp, rerr := kvc.Range(context.TODO(), &pb.RangeRequest{Key: []byte("foo")})
+	if rerr != nil {
+		t.Fatal(rerr)
 	}
 	// compact on current revision
-	_, err := kvc.Compact(context.Background(), &pb.CompactionRequest{Revision: 4})
+	_, err := kvc.Compact(context.Background(), &pb.CompactionRequest{Revision: rresp.Header.GetRevision()})
 	if err != nil {
 		t.Fatalf("couldn't compact kv space (%v)", err)
 	}
@@ -269,7 +270,7 @@ func TestV3TxnTooManyOps(t *testing.T) {
 		}
 
 		_, err := kvc.Txn(context.Background(), txn)
-		if !eqErrGRPC(err, rpctypes.ErrGRPCTooManyOps) {
+		if err == nil || !eqErrGRPC(err, rpctypes.ErrGRPCTooManyOps) {
 			t.Errorf("#%d: err = %v, want %v", i, err, rpctypes.ErrGRPCTooManyOps)
 		}
 	}
@@ -501,11 +502,16 @@ func TestV3TxnRangeCompare(t *testing.T) {
 	defer clus.Terminate(t)
 
 	// put keys, named by expected revision
+	var rev = int64(0)
 	for _, k := range []string{"/a/2", "/a/3", "/a/4", "/f/5"} {
-		if _, err := clus.Client(0).Put(context.TODO(), k, "x"); err != nil {
+		resp, err := clus.Client(0).Put(context.TODO(), k, "x")
+		if err != nil {
 			t.Fatal(err)
 		}
+		rev = resp.Header.GetRevision()
 	}
+
+	fmt.Printf("Last revision is: %d\n", rev)
 
 	tests := []struct {
 		cmp pb.Compare
@@ -519,7 +525,7 @@ func TestV3TxnRangeCompare(t *testing.T) {
 				RangeEnd:    []byte{0},
 				Target:      pb.Compare_CREATE,
 				Result:      pb.Compare_LESS,
-				TargetUnion: &pb.Compare_CreateRevision{CreateRevision: 6},
+				TargetUnion: &pb.Compare_CreateRevision{CreateRevision: rev + 1},
 			},
 			true,
 		},
@@ -530,7 +536,7 @@ func TestV3TxnRangeCompare(t *testing.T) {
 				RangeEnd:    []byte{0},
 				Target:      pb.Compare_CREATE,
 				Result:      pb.Compare_LESS,
-				TargetUnion: &pb.Compare_CreateRevision{CreateRevision: 5},
+				TargetUnion: &pb.Compare_CreateRevision{CreateRevision: rev},
 			},
 			false,
 		},
@@ -541,7 +547,7 @@ func TestV3TxnRangeCompare(t *testing.T) {
 				RangeEnd:    []byte("/a0"),
 				Target:      pb.Compare_CREATE,
 				Result:      pb.Compare_LESS,
-				TargetUnion: &pb.Compare_CreateRevision{CreateRevision: 5},
+				TargetUnion: &pb.Compare_CreateRevision{CreateRevision: rev},
 			},
 			true,
 		},
@@ -552,7 +558,7 @@ func TestV3TxnRangeCompare(t *testing.T) {
 				RangeEnd:    []byte("/a0"),
 				Target:      pb.Compare_CREATE,
 				Result:      pb.Compare_LESS,
-				TargetUnion: &pb.Compare_CreateRevision{CreateRevision: 4},
+				TargetUnion: &pb.Compare_CreateRevision{CreateRevision: rev - 1},
 			},
 			false,
 		},
@@ -1120,14 +1126,16 @@ func TestV3TxnInvalidRange(t *testing.T) {
 	kvc := toGRPC(clus.RandClient()).KV
 	preq := &pb.PutRequest{Key: []byte("foo"), Value: []byte("bar")}
 
+	var rev = int64(0)
 	for i := 0; i < 3; i++ {
-		_, err := kvc.Put(context.Background(), preq)
+		resp, err := kvc.Put(context.Background(), preq)
 		if err != nil {
 			t.Fatalf("couldn't put key (%v)", err)
 		}
+		rev = resp.Header.GetRevision()
 	}
 
-	_, err := kvc.Compact(context.Background(), &pb.CompactionRequest{Revision: 2})
+	_, err := kvc.Compact(context.Background(), &pb.CompactionRequest{Revision: rev - 2})
 	if err != nil {
 		t.Fatalf("couldn't compact kv space (%v)", err)
 	}
@@ -1138,7 +1146,7 @@ func TestV3TxnInvalidRange(t *testing.T) {
 		Request: &pb.RequestOp_RequestPut{
 			RequestPut: preq}})
 
-	rreq := &pb.RangeRequest{Key: []byte("foo"), Revision: 100}
+	rreq := &pb.RangeRequest{Key: []byte("foo"), Revision: rev + 100}
 	txn.Success = append(txn.Success, &pb.RequestOp{
 		Request: &pb.RequestOp_RequestRange{
 			RequestRange: rreq}})
@@ -1883,7 +1891,15 @@ func TestV3LargeRequests(t *testing.T) {
 }
 
 func eqErrGRPC(err1 error, err2 error) bool {
-	return !(err1 == nil && err2 != nil) || err1.Error() == err2.Error()
+	if err1 == nil && err2 == nil {
+		return true
+	}
+
+	if err1 == nil || err2 == nil {
+		return false
+	}
+
+	return err1.Error() == err2.Error()
 }
 
 // waitForRestart tries a range request until the client's server responds.

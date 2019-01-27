@@ -65,20 +65,21 @@ func TestNamespaceWatch(t *testing.T) {
 	nsKV := namespace.NewKV(c.KV, "foo/")
 	nsWatcher := namespace.NewWatcher(c.Watcher, "foo/")
 
-	if _, err := nsKV.Put(context.TODO(), "abc", "bar"); err != nil {
+	resp, err := nsKV.Put(context.TODO(), "abc", "bar")
+	if err != nil {
 		t.Fatal(err)
 	}
 
-	nsWch := nsWatcher.Watch(context.TODO(), "abc", clientv3.WithRev(1))
-	wkv := &mvccpb.KeyValue{Key: []byte("abc"), Value: []byte("bar"), CreateRevision: 2, ModRevision: 2, Version: 1}
+	nsWch := nsWatcher.Watch(context.TODO(), "abc", clientv3.WithRev(resp.Header.GetRevision()))
+	wkv := &mvccpb.KeyValue{Key: []byte("abc"), Value: []byte("bar"), CreateRevision: resp.Header.GetRevision(), ModRevision: resp.Header.GetRevision(), Version: 1}
 	if wr := <-nsWch; len(wr.Events) != 1 || !reflect.DeepEqual(wr.Events[0].Kv, wkv) {
 		t.Errorf("expected namespaced event %+v, got %+v", wkv, wr.Events[0].Kv)
 	}
 
-	wch := c.Watch(context.TODO(), "foo/abc", clientv3.WithRev(1))
-	wkv = &mvccpb.KeyValue{Key: []byte("foo/abc"), Value: []byte("bar"), CreateRevision: 2, ModRevision: 2, Version: 1}
+	wch := c.Watch(context.TODO(), "foo/abc", clientv3.WithRev(resp.Header.GetRevision()))
+	wkv = &mvccpb.KeyValue{Key: []byte("foo/abc"), Value: []byte("bar"), CreateRevision: resp.Header.GetRevision(), ModRevision: resp.Header.GetRevision(), Version: 1}
 	if wr := <-wch; len(wr.Events) != 1 || !reflect.DeepEqual(wr.Events[0].Kv, wkv) {
-		t.Errorf("expected unnamespaced event %+v, got %+v", wkv, wr)
+		t.Errorf("expected unnamespaced event %+v, got %+v", wkv, wr.Events[0].Kv)
 	}
 
 	// let client close teardown namespace watch

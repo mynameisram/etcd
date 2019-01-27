@@ -16,6 +16,7 @@ package clientv3
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -487,6 +488,9 @@ func (l *lessor) resetRecv() (pb.Lease_LeaseKeepAliveClient, error) {
 
 // recvKeepAlive updates a lease based on its LeaseKeepAliveResponse
 func (l *lessor) recvKeepAlive(resp *pb.LeaseKeepAliveResponse) {
+
+	fmt.Printf("Lease: Received KeepAlive response. header=(%+v) LeaseID=%d\n", resp.GetHeader(), resp.ID)
+
 	karesp := &LeaseKeepAliveResponse{
 		ResponseHeader: resp.GetHeader(),
 		ID:             LeaseID(resp.ID),

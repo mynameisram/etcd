@@ -308,3 +308,41 @@ func TestElectionObserveCompacted(t *testing.T) {
 		t.Fatalf(`expected leader value "abc", got %q`, string(v.Kvs[0].Value))
 	}
 }
+
+func TestElectionWithObserve(t *testing.T) {
+	clus := NewClusterV3(t, &ClusterConfig{Size: 1})
+	defer clus.Terminate(t)
+
+	cli := clus.Client(0)
+
+	fmt.Printf("TestElectionWithObserve: Before NewSession\n")
+
+	session, err := concurrency.NewSession(cli)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer session.Orphan()
+
+	fmt.Printf("TestElectionWithObserve: NewSession created. Lease Id: %d\n", session.Lease())
+
+	e := concurrency.NewElection(session, "test-elect")
+
+	fmt.Printf("TestElectionWithObserve: NewElection created.\n")
+
+	if cerr := e.Campaign(context.TODO(), "abc"); cerr != nil {
+		t.Fatal(cerr)
+	}
+
+	fmt.Printf("TestElectionWithObserve: Campaign done.\n")
+
+	v, ok := <-e.Observe(context.TODO())
+	if !ok {
+		t.Fatal("failed to observe")
+	}
+
+	fmt.Printf("TestElectionWithObserve: Observe done. Response: (%+v) \n", v)
+
+	if string(v.Kvs[0].Value) != "abc" {
+		t.Fatalf(`expected leader value "abc", got %q`, string(v.Kvs[0].Value))
+	}
+}

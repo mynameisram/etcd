@@ -153,7 +153,8 @@ func TestLeasingPutInvalidateNew(t *testing.T) {
 		t.Fatal(cerr)
 	}
 	// because stored proc, even range will increment it by 1
-	if !reflect.DeepEqual(lkvResp.Kvs, cResp.Kvs) {
+	// if !reflect.DeepEqual(lkvResp.Kvs, cResp.Kvs) {
+	if !reflect.DeepEqual(lkvResp, cResp) {
 		t.Fatalf(`expected %+v, got response %+v`, cResp, lkvResp)
 	}
 }
@@ -187,7 +188,8 @@ func TestLeasingPutInvalidateExisting(t *testing.T) {
 	if cerr != nil {
 		t.Fatal(cerr)
 	}
-	if !reflect.DeepEqual(lkvResp.Kvs, cResp.Kvs) {
+	//if !reflect.DeepEqual(lkvResp.Kvs, cResp.Kvs) {
+	if !reflect.DeepEqual(lkvResp, cResp) {
 		t.Fatalf(`expected %+v, got response %+v`, cResp, lkvResp)
 	}
 }

@@ -1,0 +1,1 @@
+go test ./... -test.v -run ^.*%1$ -count=1

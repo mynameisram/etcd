@@ -81,6 +81,8 @@ func (e *Election) Campaign(ctx context.Context, val string) error {
 		}
 	}
 
+	fmt.Printf("Campaign: Session Committed. LeaderKey=%s, LeaderRev=%d, LeaderSession=%d\n", e.leaderKey, e.leaderRev, e.leaderSession.Lease())
+
 	_, err = waitDeletes(ctx, client, e.keyPrefix, e.leaderRev-1)
 	if err != nil {
 		// clean up in case of context cancel
@@ -174,6 +176,8 @@ func (e *Election) observe(ctx context.Context, ch chan<- v3.GetResponse) {
 		var kv *mvccpb.KeyValue
 		var hdr *pb.ResponseHeader
 
+		fmt.Printf("Observe: Get on prefix %s returned. Response=(%+v)\n", e.keyPrefix, resp)
+
 		if len(resp.Kvs) == 0 {
 			cctx, cancel := context.WithCancel(ctx)
 			// wait for first key put on prefix
@@ -187,6 +191,8 @@ func (e *Election) observe(ctx context.Context, ch chan<- v3.GetResponse) {
 				}
 				// only accept puts; a delete will make observe() spin
 				for _, ev := range wr.Events {
+					fmt.Printf("Observe: event=(%+v)\n", ev)
+
 					if ev.Type == mvccpb.PUT {
 						hdr, kv = &wr.Header, ev.Kv
 						// may have multiple revs; hdr.rev = the last rev
@@ -201,11 +207,15 @@ func (e *Election) observe(ctx context.Context, ch chan<- v3.GetResponse) {
 			hdr, kv = resp.Header, resp.Kvs[0]
 		}
 
+		fmt.Printf("Observe: Observed response. Header=(%+v) Kv=(%+v)\n", hdr, kv)
+
 		select {
 		case ch <- v3.GetResponse{Header: hdr, Kvs: []*mvccpb.KeyValue{kv}}:
 		case <-ctx.Done():
 			return
 		}
+
+		fmt.Printf("Observe: Watching deletion of key %s\n", string(kv.Key))
 
 		cctx, cancel := context.WithCancel(ctx)
 		wch := client.Watch(cctx, string(kv.Key), v3.WithRev(hdr.Revision+1))
@@ -232,6 +242,8 @@ func (e *Election) observe(ctx context.Context, ch chan<- v3.GetResponse) {
 			}
 		}
 		cancel()
+
+		fmt.Printf("Observe: Watching deletion of key %s DONE\n", string(kv.Key))
 	}
 }
 

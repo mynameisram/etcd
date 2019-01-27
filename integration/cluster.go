@@ -379,6 +379,10 @@ func (c *cluster) WaitLeader(t *testing.T) int { return c.waitLeader(t, c.Member
 
 // waitLeader waits until given members agree on the same leader.
 func (c *cluster) waitLeader(t *testing.T, membs []*member) int {
+	if membs[0].IsFake() {
+		return 1
+	}
+
 	possibleLead := make(map[uint64]bool)
 	var lead uint64
 	for _, m := range membs {
@@ -630,11 +634,27 @@ func (m *member) ElectionTimeout() time.Duration {
 
 func (m *member) ID() types.ID { return m.s.ID() }
 
-func (m *member) DropConnections()    { m.grpcBridge.Reset() }
-func (m *member) PauseConnections()   { m.grpcBridge.Pause() }
-func (m *member) UnpauseConnections() { m.grpcBridge.Unpause() }
-func (m *member) Blackhole()          { m.grpcBridge.Blackhole() }
-func (m *member) Unblackhole()        { m.grpcBridge.Unblackhole() }
+func (m *member) DropConnections() {
+	if m.IsFake() {
+		return
+	}
+
+	m.grpcBridge.Reset()
+}
+func (m *member) PauseConnections() {
+	if m.IsFake() {
+		return
+	}
+	m.grpcBridge.Pause()
+}
+func (m *member) UnpauseConnections() {
+	if m.IsFake() {
+		return
+	}
+	m.grpcBridge.Unpause()
+}
+func (m *member) Blackhole()   { m.grpcBridge.Blackhole() }
+func (m *member) Unblackhole() { m.grpcBridge.Unblackhole() }
 
 // NewClientV3 creates a new grpc client connection to the member
 func NewClientV3(m *member) (*clientv3.Client, error) {
@@ -659,9 +679,17 @@ func NewClientV3(m *member) (*clientv3.Client, error) {
 	return newClientV3(cfg)
 }
 
+func (m *member) IsFake() bool {
+	return m.s == nil
+}
+
 // Clone returns a member with the same server configuration. The returned
 // member will not set PeerListeners and ClientListeners.
 func (m *member) Clone(t *testing.T) *member {
+	if m.s == nil {
+		return &member{}
+	}
+
 	mm := &member{}
 	mm.ServerConfig = m.ServerConfig
 
@@ -694,6 +722,10 @@ func (m *member) Clone(t *testing.T) *member {
 // Launch starts a member based on ServerConfig, PeerListeners
 // and ClientListeners.
 func (m *member) Launch() error {
+	if m.s == nil {
+		return nil
+	}
+
 	plog.Printf("launching %s (%s)", m.Name, m.grpcAddr)
 	var err error
 	if m.s, err = etcdserver.NewServer(m.ServerConfig); err != nil {
@@ -804,6 +836,10 @@ func (m *member) Launch() error {
 }
 
 func (m *member) WaitOK(t *testing.T) {
+	if m.s == nil {
+		return
+	}
+
 	cc := MustNewHTTPClient(t, []string{m.URL()}, m.ClientTLSInfo)
 	kapi := client.NewKeysAPI(cc)
 	for {
@@ -824,17 +860,29 @@ func (m *member) WaitOK(t *testing.T) {
 func (m *member) URL() string { return m.ClientURLs[0].String() }
 
 func (m *member) Pause() {
+	if m.s == nil {
+		return
+	}
+
 	m.raftHandler.Pause()
 	m.s.PauseSending()
 }
 
 func (m *member) Resume() {
+	if m.s == nil {
+		return
+	}
+
 	m.raftHandler.Resume()
 	m.s.ResumeSending()
 }
 
 // Close stops the member's etcdserver and closes its connections
 func (m *member) Close() {
+	if m.s == nil {
+		return
+	}
+
 	if m.grpcBridge != nil {
 		m.grpcBridge.Close()
 		m.grpcBridge = nil
@@ -859,6 +907,10 @@ func (m *member) Close() {
 
 // Stop stops the member, but the data dir of the member is preserved.
 func (m *member) Stop(t *testing.T) {
+	if m.s == nil {
+		return
+	}
+
 	plog.Printf("stopping %s (%s)", m.Name, m.grpcAddr)
 	m.Close()
 	m.serverClosers = nil
@@ -881,6 +933,10 @@ func (m *member) StopNotify() <-chan struct{} {
 
 // Restart starts the member using the preserved data dir.
 func (m *member) Restart(t *testing.T) error {
+	if m.s == nil {
+		return nil
+	}
+
 	plog.Printf("restarting %s (%s)", m.Name, m.grpcAddr)
 	newPeerListeners := make([]net.Listener, 0)
 	for _, ln := range m.PeerListeners {
@@ -906,6 +962,10 @@ func (m *member) Restart(t *testing.T) error {
 
 // Terminate stops the member and removes the data dir.
 func (m *member) Terminate(t *testing.T) {
+	if m.s == nil {
+		return
+	}
+
 	plog.Printf("terminating %s (%s)", m.Name, m.grpcAddr)
 	m.Close()
 	if !m.keepDataDirTerminate {
@@ -918,6 +978,10 @@ func (m *member) Terminate(t *testing.T) {
 
 // Metric gets the metric value for a member
 func (m *member) Metric(metricName string) (string, error) {
+	if m.s == nil {
+		return "", nil
+	}
+
 	cfgtls := transport.TLSInfo{}
 	tr, err := transport.NewTimeoutTransport(cfgtls, time.Second, time.Second, time.Second)
 	if err != nil {
@@ -944,6 +1008,10 @@ func (m *member) Metric(metricName string) (string, error) {
 
 // InjectPartition drops connections from m to others, vice versa.
 func (m *member) InjectPartition(t *testing.T, others ...*member) {
+	if m.s == nil {
+		return
+	}
+
 	for _, other := range others {
 		m.s.CutPeer(other.s.ID())
 		other.s.CutPeer(m.s.ID())
@@ -952,6 +1020,10 @@ func (m *member) InjectPartition(t *testing.T, others ...*member) {
 
 // RecoverPartition recovers connections from m to others, vice versa.
 func (m *member) RecoverPartition(t *testing.T, others ...*member) {
+	if m.s == nil {
+		return
+	}
+
 	for _, other := range others {
 		m.s.MendPeer(other.s.ID())
 		other.s.MendPeer(m.s.ID())
@@ -1002,33 +1074,53 @@ func NewClusterV3(t *testing.T, cfg *ClusterConfig) *ClusterV3 {
 	if os.Getenv("CLIENT_DEBUG") != "" {
 		clientv3.SetLogger(grpclog.NewLoggerV2WithVerbosity(os.Stderr, os.Stderr, os.Stderr, 4))
 	}
-	clus := &ClusterV3{
-		//cluster: NewClusterByConfig(t, cfg),
+
+	cosmosEndpoint := os.Getenv("COSMOS_ETCD_ENDPOINT")
+	var clus *ClusterV3
+
+	if cosmosEndpoint == "" {
+		clus = &ClusterV3{
+			cluster: NewClusterByConfig(t, cfg),
+		}
+		clus.Launch(t)
+	} else {
+		clus = &ClusterV3{
+			cluster: &cluster{
+				cfg:     cfg,
+				Members: make([]*member, cfg.Size),
+			},
+		}
+
+		for i := 0; i < cfg.Size; i++ {
+			clus.Members[i] = &member{}
+		}
 	}
-	//clus.Launch(t)
 
 	if !cfg.SkipCreatingClient {
-		cfg := clientv3.Config{
-			Endpoints:   []string{"http://127.0.0.1:2379"},
-			DialTimeout: 300 * time.Second,
-		}
-
-		for i := 0; i < 3; i++ {
-			client, err := newClientV3(cfg)
-			if err != nil {
-				t.Fatalf("cannot create client: %v", err)
-			}
-			clus.clients = append(clus.clients, client)
-		}
-		/*
+		if cosmosEndpoint == "" {
 			for _, m := range clus.Members {
 				client, err := NewClientV3(m)
+
+				if err != nil {
+					t.Fatalf("cannot create client: %v", err)
+				}
+
+				clus.clients = append(clus.clients, client)
+			}
+		} else {
+			cfg := clientv3.Config{
+				Endpoints:   []string{cosmosEndpoint},
+				DialTimeout: 300 * time.Second,
+			}
+
+			for i := 0; i < 3; i++ {
+				client, err := newClientV3(cfg)
 				if err != nil {
 					t.Fatalf("cannot create client: %v", err)
 				}
 				clus.clients = append(clus.clients, client)
 			}
-		*/
+		}
 	}
 
 	return clus
@@ -1051,7 +1143,10 @@ func (c *ClusterV3) Terminate(t *testing.T) {
 		}
 	}
 	c.mu.Unlock()
-	//c.cluster.Terminate(t)
+
+	if os.Getenv("COSMOS_ETCD_ENDPOINT") == "" {
+		c.cluster.Terminate(t)
+	}
 }
 
 func (c *ClusterV3) RandClient() *clientv3.Client {

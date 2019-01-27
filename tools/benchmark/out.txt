@@ -1,0 +1,414 @@
+
+Active Connections
+
+  Proto  Local Address          Foreign Address        State
+  TCP    0.0.0.0:80             wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    0.0.0.0:135            wmengdev3:0            LISTENING
+  RpcSs
+ [svchost.exe]
+  TCP    0.0.0.0:443            wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    0.0.0.0:445            wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    0.0.0.0:623            wmengdev3:0            LISTENING
+ [LMS.exe]
+  TCP    0.0.0.0:2179           wmengdev3:0            LISTENING
+ [vmms.exe]
+  TCP    0.0.0.0:2380           wmengdev3:0            LISTENING
+ [testhost.exe]
+  TCP    0.0.0.0:3389           wmengdev3:0            LISTENING
+  TermService
+ [svchost.exe]
+  TCP    0.0.0.0:5040           wmengdev3:0            LISTENING
+  CDPSvc
+ [svchost.exe]
+  TCP    0.0.0.0:5985           wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    0.0.0.0:7680           wmengdev3:0            LISTENING
+  DoSvc
+ [svchost.exe]
+  TCP    0.0.0.0:10250          wmengdev3:0            LISTENING
+ [DocumentDB.GatewayService.exe]
+  TCP    0.0.0.0:10255          wmengdev3:0            LISTENING
+ [DocumentDB.GatewayService.exe]
+  TCP    0.0.0.0:16992          wmengdev3:0            LISTENING
+ [LMS.exe]
+  TCP    0.0.0.0:30464          wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    0.0.0.0:30465          wmengdev3:0            LISTENING
+  EventLog
+ [svchost.exe]
+  TCP    0.0.0.0:30877          wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    0.0.0.0:33212          wmengdev3:0            LISTENING
+  Schedule
+ [svchost.exe]
+  TCP    0.0.0.0:33519          wmengdev3:0            LISTENING
+ [spoolsv.exe]
+  TCP    0.0.0.0:33520          wmengdev3:0            LISTENING
+ [lsass.exe]
+  TCP    0.0.0.0:35128          wmengdev3:0            LISTENING
+ [lsass.exe]
+  TCP    0.0.0.0:35595          wmengdev3:0            LISTENING
+  SessionEnv
+ [svchost.exe]
+  TCP    0.0.0.0:47001          wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    10.120.216.64:139      wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    10.120.216.64:3389     SAW-L6501582UTQ:64233  ESTABLISHED
+  TermService
+ [svchost.exe]
+  TCP    10.120.216.64:7680     DDMDS-2012:49678       ESTABLISHED
+  DoSvc
+ [svchost.exe]
+  TCP    10.120.216.64:10251    wmengdev3:0            LISTENING
+ [DocumentDB.Master.exe]
+  TCP    10.120.216.64:10251    wmengdev3:33108        ESTABLISHED
+ [DocumentDB.Master.exe]
+  TCP    10.120.216.64:10252    wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    10.120.216.64:10253    wmengdev3:0            LISTENING
+ [DocumentDB.Server.exe]
+  TCP    10.120.216.64:10253    wmengdev3:33113        ESTABLISHED
+ [DocumentDB.Server.exe]
+  TCP    10.120.216.64:10254    wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    10.120.216.64:30521    lb-192-30-253-124-iad:https  ESTABLISHED
+ [MicrosoftEdgeCP.exe]
+  TCP    10.120.216.64:33108    wmengdev3:10251        ESTABLISHED
+ [DocumentDB.GatewayService.exe]
+  TCP    10.120.216.64:33113    wmengdev3:10253        ESTABLISHED
+ [DocumentDB.GatewayService.exe]
+  TCP    10.120.216.64:33665    10.130.135.116:http    ESTABLISHED
+ [CcmExec.exe]
+  TCP    10.120.216.64:34370    52.173.24.17:https     ESTABLISHED
+  WpnService
+ [svchost.exe]
+  TCP    10.120.216.64:34416    sippoolsn23a06:https   ESTABLISHED
+ [lync.exe]
+  TCP    10.120.216.64:35433    40.84.185.67:9354      ESTABLISHED
+ [ServiceHub.SettingsHost.exe]
+  TCP    10.120.216.64:35443    52.165.170.112:https   ESTABLISHED
+ [OneDrive.exe]
+  TCP    10.120.216.64:36135    13.107.6.175:https     ESTABLISHED
+ [MicrosoftEdgeCP.exe]
+  TCP    10.120.216.64:36167    13.107.6.175:https     ESTABLISHED
+ [CodeFlow.exe]
+  TCP    10.120.216.64:36171    64.4.54.254:https      ESTABLISHED
+ [PerfWatson2.exe]
+  TCP    10.120.216.64:36177    13.91.242.34:https     ESTABLISHED
+ [chrome.exe]
+  TCP    10.120.216.64:36181    13.107.6.175:https     ESTABLISHED
+ [CodeFlow.exe]
+  TCP    10.120.216.64:36236    13.107.6.175:https     ESTABLISHED
+ [CodeFlow.exe]
+  TCP    10.120.216.64:36241    10.158.0.10:microsoft-ds  ESTABLISHED
+ Can not obtain ownership information
+  TCP    10.120.216.64:36295    52.109.120.20:https    ESTABLISHED
+ [GROOVE.EXE]
+  TCP    10.120.216.64:36296    10.130.135.116:http    ESTABLISHED
+ [CcmExec.exe]
+  TCP    10.120.216.64:36297    10.130.135.116:http    ESTABLISHED
+  BITS
+ [svchost.exe]
+  TCP    10.120.216.64:36300    13.107.136.9:https     ESTABLISHED
+ [GROOVE.EXE]
+  TCP    10.120.216.64:36307    104.210.58.34:https    ESTABLISHED
+ [MicrosoftEdge.exe]
+  TCP    10.120.216.64:36310    14d9ed283dfc410:7680   SYN_SENT
+  DoSvc
+ [svchost.exe]
+  TCP    127.0.0.1:4767         wmengdev3:0            LISTENING
+ [PanGPS.exe]
+  TCP    127.0.0.1:4767         intune-edu:32226       ESTABLISHED
+ [PanGPS.exe]
+  TCP    127.0.0.1:8081         wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    127.0.0.1:10000        wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    127.0.0.1:10001        wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    127.0.0.1:10002        wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    127.0.0.1:32226        intune-edu:4767        ESTABLISHED
+ [PanGPA.exe]
+  TCP    127.0.0.1:34216        intune-edu:34986       ESTABLISHED
+ [devenv.exe]
+  TCP    127.0.0.1:34218        wmengdev3:0            LISTENING
+ [devenv.exe]
+  TCP    127.0.0.1:34218        intune-edu:34226       ESTABLISHED
+ [devenv.exe]
+  TCP    127.0.0.1:34219        wmengdev3:0            LISTENING
+ [devenv.exe]
+  TCP    127.0.0.1:34219        intune-edu:34225       ESTABLISHED
+ [devenv.exe]
+  TCP    127.0.0.1:34225        intune-edu:34219       ESTABLISHED
+ [node.exe]
+  TCP    127.0.0.1:34226        intune-edu:34218       ESTABLISHED
+ [node.exe]
+  TCP    127.0.0.1:34985        wmengdev3:0            LISTENING
+ [devenv.exe]
+  TCP    127.0.0.1:34985        intune-edu:36304       CLOSE_WAIT
+ [devenv.exe]
+  TCP    127.0.0.1:34986        wmengdev3:0            LISTENING
+ [Microsoft.Alm.Shared.Remoting.RemoteContainer.dll]
+  TCP    127.0.0.1:34986        intune-edu:34216       ESTABLISHED
+ [Microsoft.Alm.Shared.Remoting.RemoteContainer.dll]
+  TCP    127.0.0.1:34990        wmengdev3:0            LISTENING
+ [devenv.exe]
+  TCP    127.0.0.1:34990        intune-edu:34991       ESTABLISHED
+ [devenv.exe]
+  TCP    127.0.0.1:34991        intune-edu:34990       ESTABLISHED
+ [vstest.console.exe]
+  TCP    127.0.0.1:36291        wmengdev3:0            LISTENING
+ [vstest.console.exe]
+  TCP    127.0.0.1:36291        intune-edu:36294       ESTABLISHED
+ [vstest.console.exe]
+  TCP    127.0.0.1:36294        intune-edu:36291       ESTABLISHED
+ [testhost.exe]
+  TCP    127.0.0.1:36303        intune-edu:34986       TIME_WAIT
+  TCP    127.0.0.1:36304        intune-edu:34985       FIN_WAIT_2
+ [Microsoft.Alm.Shared.Remoting.RemoteContainer.dll]
+  TCP    127.0.0.1:36345        wmengdev3:0            LISTENING
+ [LMS.exe]
+  TCP    127.0.0.1:36515        wmengdev3:0            LISTENING
+ [SCNotification.exe]
+  TCP    [::]:80                wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    [::]:135               wmengdev3:0            LISTENING
+  RpcSs
+ [svchost.exe]
+  TCP    [::]:443               wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    [::]:445               wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    [::]:623               wmengdev3:0            LISTENING
+ [LMS.exe]
+  TCP    [::]:2179              wmengdev3:0            LISTENING
+ [vmms.exe]
+  TCP    [::]:3389              wmengdev3:0            LISTENING
+  TermService
+ [svchost.exe]
+  TCP    [::]:5985              wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    [::]:7680              wmengdev3:0            LISTENING
+  DoSvc
+ [svchost.exe]
+  TCP    [::]:16992             wmengdev3:0            LISTENING
+ [LMS.exe]
+  TCP    [::]:30464             wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    [::]:30465             wmengdev3:0            LISTENING
+  EventLog
+ [svchost.exe]
+  TCP    [::]:30877             wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    [::]:33212             wmengdev3:0            LISTENING
+  Schedule
+ [svchost.exe]
+  TCP    [::]:33519             wmengdev3:0            LISTENING
+ [spoolsv.exe]
+  TCP    [::]:33520             wmengdev3:0            LISTENING
+ [lsass.exe]
+  TCP    [::]:35128             wmengdev3:0            LISTENING
+ [lsass.exe]
+  TCP    [::]:35595             wmengdev3:0            LISTENING
+  SessionEnv
+ [svchost.exe]
+  TCP    [::]:47001             wmengdev3:0            LISTENING
+ Can not obtain ownership information
+  TCP    [::1]:36342            wmengdev3:0            LISTENING
+ [jhi_service.exe]
+  TCP    [::1]:36346            localhostv6:36348      ESTABLISHED
+ [LMS.exe]
+  TCP    [::1]:36348            localhostv6:36346      ESTABLISHED
+ [LMS.exe]
+  TCP    [2001:4898:f0:1025:545f:ff5f:d6f1:5fe]:34543  g2600-1409-000a-059a-0000-0000-0000-0057:https  CLOSE_WAIT
+ [Video.UI.exe]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:32283  [2620:109:c002::6cae:a0a]:https  CLOSE_WAIT
+ [SearchUI.exe]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:32358  msprint44:56973        ESTABLISHED
+ [spoolsv.exe]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:32394  ntprint:63566          ESTABLISHED
+ [spoolsv.exe]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:35123  [2603:1036:906:16::2]:https  ESTABLISHED
+ [OUTLOOK.EXE]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:35630  [2603:1036:902:de::2]:https  ESTABLISHED
+ [OUTLOOK.EXE]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:35783  [2603:1036:101:4a::2]:https  ESTABLISHED
+ [OUTLOOK.EXE]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:35851  [2603:1036:102:16::2]:https  ESTABLISHED
+ [UcMapi.exe]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:36013  [2603:1036:902:7a::2]:https  ESTABLISHED
+ [lync.exe]
+  TCP    [2001:4898:f0:1025:7535:5e90:5a0:fda]:36242  [2603:1036:101:2::2]:https  ESTABLISHED
+ [OUTLOOK.EXE]
+  UDP    0.0.0.0:53             *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    0.0.0.0:68             *:*                    
+  Dhcp
+ [svchost.exe]
+  UDP    0.0.0.0:123            *:*                    
+  W32Time
+ [svchost.exe]
+  UDP    0.0.0.0:500            *:*                    
+  IKEEXT
+ [svchost.exe]
+  UDP    0.0.0.0:1031           *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    0.0.0.0:1032           *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    0.0.0.0:3389           *:*                    
+  TermService
+ [svchost.exe]
+  UDP    0.0.0.0:3702           *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    0.0.0.0:3702           *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    0.0.0.0:3702           *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    0.0.0.0:3702           *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    0.0.0.0:4353           *:*                    
+ [chrome.exe]
+  UDP    0.0.0.0:4500           *:*                    
+  IKEEXT
+ [svchost.exe]
+  UDP    0.0.0.0:5050           *:*                    
+  CDPSvc
+ [svchost.exe]
+  UDP    0.0.0.0:5353           *:*                    
+ [chrome.exe]
+  UDP    0.0.0.0:5353           *:*                    
+  Dnscache
+ [svchost.exe]
+  UDP    0.0.0.0:5353           *:*                    
+ [chrome.exe]
+  UDP    0.0.0.0:5353           *:*                    
+ [chrome.exe]
+  UDP    0.0.0.0:5353           *:*                    
+ [chrome.exe]
+  UDP    0.0.0.0:5355           *:*                    
+  Dnscache
+ [svchost.exe]
+  UDP    0.0.0.0:16588          *:*                    
+ [SkypeHost.exe]
+  UDP    10.120.216.64:137      *:*                    
+ Can not obtain ownership information
+  UDP    10.120.216.64:138      *:*                    
+ Can not obtain ownership information
+  UDP    10.120.216.64:1039     *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    10.120.216.64:1900     *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    127.0.0.1:1026         *:*                    
+  NlaSvc
+ [svchost.exe]
+  UDP    127.0.0.1:1029         *:*                    
+  LanmanWorkstation
+ [svchost.exe]
+  UDP    127.0.0.1:1030         *:*                    
+ [CcmExec.exe]
+  UDP    127.0.0.1:1034         *:*                    
+ [OUTLOOK.EXE]
+  UDP    127.0.0.1:1040         *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    127.0.0.1:1041         *:*                    
+ [Kusto.Explorer.exe]
+  UDP    127.0.0.1:1900         *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    127.0.0.1:15511        *:*                    
+ [TelemetryHost.exe]
+  UDP    127.0.0.1:21044        *:*                    
+ [ONENOTE.EXE]
+  UDP    127.0.0.1:21173        *:*                    
+ [wmiprvse.exe]
+  UDP    127.0.0.1:24449        *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    127.0.0.1:25872        *:*                    
+ [lsass.exe]
+  UDP    172.22.245.209:67      *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    172.22.245.209:68      *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    172.22.245.209:1038    *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    172.22.245.209:1900    *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [::]:123               *:*                    
+  W32Time
+ [svchost.exe]
+  UDP    [::]:500               *:*                    
+  IKEEXT
+ [svchost.exe]
+  UDP    [::]:1033              *:*                    
+  SharedAccess
+ [svchost.exe]
+  UDP    [::]:3389              *:*                    
+  TermService
+ [svchost.exe]
+  UDP    [::]:3702              *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    [::]:3702              *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    [::]:3702              *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    [::]:3702              *:*                    
+  PeerDistSvc
+ [svchost.exe]
+  UDP    [::]:4353              *:*                    
+ [chrome.exe]
+  UDP    [::]:4500              *:*                    
+  IKEEXT
+ [svchost.exe]
+  UDP    [::]:5353              *:*                    
+ [chrome.exe]
+  UDP    [::]:5353              *:*                    
+  Dnscache
+ [svchost.exe]
+  UDP    [::]:5353              *:*                    
+ [chrome.exe]
+  UDP    [::]:5355              *:*                    
+  Dnscache
+ [svchost.exe]
+  UDP    [::]:16588             *:*                    
+ [SkypeHost.exe]
+  UDP    [::1]:1037             *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [::1]:1900             *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::20:ea8a:b1bf:bd1%14]:1028  *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::20:ea8a:b1bf:bd1%14]:1900  *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::d1f9:ca44:b535:64fd%24]:1036  *:*                    
+  SSDPSRV
+ [svchost.exe]
+  UDP    [fe80::d1f9:ca44:b535:64fd%24]:1900  *:*                    
+  SSDPSRV
+ [svchost.exe]

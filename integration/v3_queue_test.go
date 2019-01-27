@@ -160,6 +160,8 @@ func newPriorityQueues(clus *ClusterV3, n int) (qs []testQueue) {
 }
 
 func testReadersWriters(t *testing.T, rqs []testQueue, wqs []testQueue) {
+	fmt.Printf("testReadersWriters Start\n")
+
 	rerrc := make(chan error)
 	werrc := make(chan error)
 	manyWriters(wqs, queueItemsPerClient, werrc)
@@ -178,34 +180,50 @@ func testReadersWriters(t *testing.T, rqs []testQueue, wqs []testQueue) {
 
 func manyReaders(qs []testQueue, totalReads int, errc chan<- error) {
 	var rxReads int32
-	for _, q := range qs {
-		go func(q testQueue) {
+	for idx, q := range qs {
+		go func(q testQueue, qi int) {
 			for {
 				total := atomic.AddInt32(&rxReads, 1)
 				if int(total) > totalReads {
 					break
 				}
+
+				fmt.Printf(">> Reader %d to dequeue at %d on queue %p.\n", qi, total, q)
+
 				if _, err := q.Dequeue(); err != nil {
 					errc <- err
 					return
 				}
+
+				fmt.Printf("<< Reader %d done dequeue at %d on queue %p.\n", qi, total, q)
 			}
+
+			fmt.Printf("Reader %d done on queue %p.\n", qi, q)
+
 			errc <- nil
-		}(q)
+		}(q, idx)
 	}
 }
 
 func manyWriters(qs []testQueue, writesEach int, errc chan<- error) {
-	for _, q := range qs {
-		go func(q testQueue) {
+	for idx, q := range qs {
+		go func(q testQueue, qi int) {
 			for j := 0; j < writesEach; j++ {
+
+				fmt.Printf(">> Writer %d to enqueue %d.\n", qi, j)
+
 				if err := q.Enqueue("foo"); err != nil {
 					errc <- err
 					return
 				}
+
+				fmt.Printf("<< Writer %d done enqueue %d.\n", qi, j)
 			}
+
+			fmt.Printf("Writer %d done.\n", qi)
+
 			errc <- nil
-		}(q)
+		}(q, idx)
 	}
 }
 

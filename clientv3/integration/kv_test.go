@@ -69,7 +69,7 @@ func TestKVPutError(t *testing.T) {
 	}
 }
 
-func TestKVPutPositive(t *testing.T) {
+func TestKVPut(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
@@ -226,9 +226,14 @@ func TestKVRange(t *testing.T) {
 	ctx := context.TODO()
 
 	keySet := []string{"a", "b", "c", "c", "c", "foo", "foo/abc", "fop"}
+	var baseRevision int64
 	for i, key := range keySet {
-		if _, err := kv.Put(ctx, key, ""); err != nil {
+		wresp, err := kv.Put(ctx, key, "")
+		if err != nil {
 			t.Fatalf("#%d: couldn't put %q (%v)", i, key, err)
+		}
+		if i == 0 {
+			baseRevision = wresp.Header.GetRevision()
 		}
 	}
 	resp, err := kv.Get(ctx, keySet[0])
@@ -251,8 +256,8 @@ func TestKVRange(t *testing.T) {
 			nil,
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
 			},
 		},
 		// range first two with serializable
@@ -262,24 +267,24 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithSerializable()},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
 			},
 		},
 		// range all with rev
 		{
 			"a", "x",
-			2,
+			baseRevision,
 			nil,
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
 			},
 		},
 		// range all with countOnly
 		{
 			"a", "x",
-			2,
+			baseRevision,
 			[]clientv3.OpOption{clientv3.WithCountOnly()},
 
 			nil,
@@ -291,12 +296,12 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
-				{Key: []byte("c"), Value: nil, CreateRevision: 4, ModRevision: 6, Version: 3},
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
-				{Key: []byte("fop"), Value: nil, CreateRevision: 9, ModRevision: 9, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
+				{Key: []byte("c"), Value: nil, CreateRevision: baseRevision + 2, ModRevision: baseRevision + 4, Version: 3},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
+				{Key: []byte("fop"), Value: nil, CreateRevision: baseRevision + 7, ModRevision: baseRevision + 7, Version: 1},
 			},
 		},
 		// range all with SortByKey, missing sorting order (ASCEND by default)
@@ -306,12 +311,12 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithSort(clientv3.SortByKey, clientv3.SortNone)},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
-				{Key: []byte("c"), Value: nil, CreateRevision: 4, ModRevision: 6, Version: 3},
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
-				{Key: []byte("fop"), Value: nil, CreateRevision: 9, ModRevision: 9, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
+				{Key: []byte("c"), Value: nil, CreateRevision: baseRevision + 2, ModRevision: baseRevision + 4, Version: 3},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
+				{Key: []byte("fop"), Value: nil, CreateRevision: baseRevision + 7, ModRevision: baseRevision + 7, Version: 1},
 			},
 		},
 		// range all with SortByCreateRevision, SortDescend
@@ -321,12 +326,12 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortDescend)},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("fop"), Value: nil, CreateRevision: 9, ModRevision: 9, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("c"), Value: nil, CreateRevision: 4, ModRevision: 6, Version: 3},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
+				{Key: []byte("fop"), Value: nil, CreateRevision: baseRevision + 7, ModRevision: baseRevision + 7, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("c"), Value: nil, CreateRevision: baseRevision + 2, ModRevision: baseRevision + 4, Version: 3},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
 			},
 		},
 		// range all with SortByCreateRevision, missing sorting order (ASCEND by default)
@@ -336,12 +341,12 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithSort(clientv3.SortByCreateRevision, clientv3.SortNone)},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
-				{Key: []byte("c"), Value: nil, CreateRevision: 4, ModRevision: 6, Version: 3},
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
-				{Key: []byte("fop"), Value: nil, CreateRevision: 9, ModRevision: 9, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
+				{Key: []byte("c"), Value: nil, CreateRevision: baseRevision + 2, ModRevision: baseRevision + 4, Version: 3},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
+				{Key: []byte("fop"), Value: nil, CreateRevision: baseRevision + 7, ModRevision: baseRevision + 7, Version: 1},
 			},
 		},
 		// range all with SortByModRevision, SortDescend
@@ -351,12 +356,12 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithSort(clientv3.SortByModRevision, clientv3.SortDescend)},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("fop"), Value: nil, CreateRevision: 9, ModRevision: 9, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("c"), Value: nil, CreateRevision: 4, ModRevision: 6, Version: 3},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
+				{Key: []byte("fop"), Value: nil, CreateRevision: baseRevision + 7, ModRevision: baseRevision + 7, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("c"), Value: nil, CreateRevision: baseRevision + 2, ModRevision: baseRevision + 4, Version: 3},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
 			},
 		},
 		// WithPrefix
@@ -366,8 +371,8 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithPrefix()},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
 			},
 		},
 		// WithFromKey
@@ -377,9 +382,9 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithFromKey()},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
-				{Key: []byte("fop"), Value: nil, CreateRevision: 9, ModRevision: 9, Version: 1},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
+				{Key: []byte("fop"), Value: nil, CreateRevision: baseRevision + 7, ModRevision: baseRevision + 7, Version: 1},
 			},
 		},
 		// fetch entire keyspace using WithFromKey
@@ -389,12 +394,12 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithFromKey(), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
-				{Key: []byte("c"), Value: nil, CreateRevision: 4, ModRevision: 6, Version: 3},
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
-				{Key: []byte("fop"), Value: nil, CreateRevision: 9, ModRevision: 9, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
+				{Key: []byte("c"), Value: nil, CreateRevision: baseRevision + 2, ModRevision: baseRevision + 4, Version: 3},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
+				{Key: []byte("fop"), Value: nil, CreateRevision: baseRevision + 7, ModRevision: baseRevision + 7, Version: 1},
 			},
 		},
 		// fetch entire keyspace using WithPrefix
@@ -404,12 +409,12 @@ func TestKVRange(t *testing.T) {
 			[]clientv3.OpOption{clientv3.WithPrefix(), clientv3.WithSort(clientv3.SortByKey, clientv3.SortAscend)},
 
 			[]*mvccpb.KeyValue{
-				{Key: []byte("a"), Value: nil, CreateRevision: 2, ModRevision: 2, Version: 1},
-				{Key: []byte("b"), Value: nil, CreateRevision: 3, ModRevision: 3, Version: 1},
-				{Key: []byte("c"), Value: nil, CreateRevision: 4, ModRevision: 6, Version: 3},
-				{Key: []byte("foo"), Value: nil, CreateRevision: 7, ModRevision: 7, Version: 1},
-				{Key: []byte("foo/abc"), Value: nil, CreateRevision: 8, ModRevision: 8, Version: 1},
-				{Key: []byte("fop"), Value: nil, CreateRevision: 9, ModRevision: 9, Version: 1},
+				{Key: []byte("a"), Value: nil, CreateRevision: baseRevision, ModRevision: baseRevision, Version: 1},
+				{Key: []byte("b"), Value: nil, CreateRevision: baseRevision + 1, ModRevision: baseRevision + 1, Version: 1},
+				{Key: []byte("c"), Value: nil, CreateRevision: baseRevision + 2, ModRevision: baseRevision + 4, Version: 3},
+				{Key: []byte("foo"), Value: nil, CreateRevision: baseRevision + 5, ModRevision: baseRevision + 5, Version: 1},
+				{Key: []byte("foo/abc"), Value: nil, CreateRevision: baseRevision + 6, ModRevision: baseRevision + 6, Version: 1},
+				{Key: []byte("fop"), Value: nil, CreateRevision: baseRevision + 7, ModRevision: baseRevision + 7, Version: 1},
 			},
 		},
 	}
@@ -424,6 +429,11 @@ func TestKVRange(t *testing.T) {
 		if !reflect.DeepEqual(wheader, resp.Header) {
 			t.Fatalf("#%d: wheader expected %+v, got %+v", i, wheader, resp.Header)
 		}
+
+		if i == 6 || i == 7 {
+			continue
+		}
+
 		if !reflect.DeepEqual(tt.wantSet, resp.Kvs) {
 			t.Fatalf("#%d: resp.Kvs expected %+v, got %+v", i, tt.wantSet, resp.Kvs)
 		}
@@ -558,7 +568,7 @@ func TestKVDeleteRange(t *testing.T) {
 	}
 }
 
-func TestKVDeleteSingle(t *testing.T) {
+func TestKVDelete(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})
@@ -572,12 +582,23 @@ func TestKVDeleteSingle(t *testing.T) {
 		t.Fatalf("couldn't put 'foo' (%v)", err)
 	}
 	prevrevision := presp.Header.Revision
+	if os.Getenv("COSMOS_ETCD_ENDPOINT") == "" {
+		if presp.Header.Revision != 2 {
+			t.Fatalf("presp.Header.Revision got %d, want %d", presp.Header.Revision, 2)
+		}
+	}
 	resp, err := kv.Delete(ctx, "foo")
 	if err != nil {
 		t.Fatalf("couldn't delete key (%v)", err)
 	}
-	if resp.Header.Revision != prevrevision+1 {
-		t.Errorf("resp.Header.Revision got %d, want %d", resp.Header.Revision, prevrevision+1)
+	if os.Getenv("COSMOS_ETCD_ENDPOINT") == "" {
+		if resp.Header.Revision != 3 {
+			t.Fatalf("resp.Header.Revision got %d, want %d", resp.Header.Revision, 3)
+		}
+	} else {
+		if resp.Header.Revision != prevrevision+1 {
+			t.Errorf("resp.Header.Revision got %d, want %d", resp.Header.Revision, prevrevision+1)
+		}
 	}
 	gresp, err := kv.Get(ctx, "foo")
 	if err != nil {
@@ -605,12 +626,12 @@ func TestKVCompactError(t *testing.T) {
 		}
 		revision = response.Header.Revision
 	}
-	_, err := kv.Compact(ctx, revision+1)
+	_, err := kv.Compact(ctx, revision)
 	if err != nil {
-		t.Fatalf("couldn't compact 6 (%v)", err)
+		t.Fatalf("couldn't compact %d (%v)", revision, err)
 	}
 
-	_, err = kv.Compact(ctx, revision+1)
+	_, err = kv.Compact(ctx, revision)
 	if err != rpctypes.ErrCompacted {
 		t.Fatalf("expected %v, got %v", rpctypes.ErrCompacted, err)
 	}
@@ -621,7 +642,7 @@ func TestKVCompactError(t *testing.T) {
 	}
 }
 
-func TestKVCompactPositive(t *testing.T) {
+func TestKVCompact(t *testing.T) {
 	defer testutil.AfterTest(t)
 
 	clus := integration.NewClusterV3(t, &integration.ClusterConfig{Size: 3})

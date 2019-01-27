@@ -16,6 +16,7 @@ package recipe
 
 import (
 	"context"
+	"fmt"
 
 	v3 "github.com/coreos/etcd/clientv3"
 	"github.com/coreos/etcd/mvcc/mvccpb"
@@ -47,15 +48,21 @@ func (q *Queue) Dequeue() (string, error) {
 		return "", err
 	}
 
+	fmt.Printf("Dequeue. Get on %s returned %d keys on queue %p\n", q.keyPrefix, len(resp.Kvs), q)
+
 	kv, err := claimFirstKey(q.client, resp.Kvs)
 	if err != nil {
 		return "", err
 	} else if kv != nil {
+		fmt.Printf("Dequeue. Successfully dequeued key %s and modRevision %d based on Get from queue %p\n", string(kv.Key), kv.ModRevision, q)
+
 		return string(kv.Value), nil
 	} else if resp.More {
 		// missed some items, retry to read in more
 		return q.Dequeue()
 	}
+
+	fmt.Printf("Dequeue. Starting to wait for events on prefix %s at revision %d on queue %p\n", q.keyPrefix, resp.Header.Revision, q)
 
 	// nothing yet; wait on elements
 	ev, err := WaitPrefixEvents(
@@ -67,11 +74,18 @@ func (q *Queue) Dequeue() (string, error) {
 		return "", err
 	}
 
+	fmt.Printf("Dequeue. Found event on key %s and modRevision %d, while waiting on queue %p\n", ev.Kv.Key, ev.Kv.ModRevision, q)
+
 	ok, err := deleteRevKey(q.client, string(ev.Kv.Key), ev.Kv.ModRevision)
 	if err != nil {
 		return "", err
 	} else if !ok {
+		fmt.Printf("Dequeue. Failed to delete key %s and modRevision %d, on queue %p\n", ev.Kv.Key, ev.Kv.ModRevision, q)
+
 		return q.Dequeue()
 	}
+
+	fmt.Printf("Dequeue. Successfully deleted key %s and modRevision %d, on queue %p\n", ev.Kv.Key, ev.Kv.ModRevision, q)
+
 	return string(ev.Kv.Value), err
 }

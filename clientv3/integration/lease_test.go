@@ -561,7 +561,7 @@ func TestLeaseTimeToLiveLeaseNotFound(t *testing.T) {
 	lresp, err := cli.TimeToLive(context.Background(), resp.ID)
 	// TimeToLive() should return a response with TTL=-1.
 	if err != nil {
-		t.Fatalf("expected err to be nil")
+		t.Fatalf("expected err to be nil. got: %v", err)
 	}
 	if lresp == nil {
 		t.Fatalf("expected lresp not to be nil")
